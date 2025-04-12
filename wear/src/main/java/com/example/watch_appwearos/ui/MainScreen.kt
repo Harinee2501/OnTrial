@@ -14,6 +14,7 @@ import com.example.watch_appwearos.data.HeartRateData
 import com.example.watch_appwearos.data.LocationData
 import com.example.watch_appwearos.data.MotionData
 import com.example.watch_appwearos.data.SosStatus
+import com.example.watch_appwearos.data.SpO2Data
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -26,7 +27,7 @@ fun MainScreen(
     val sosStatus by viewModel.sosStatus.collectAsState()
     val heartRateData by viewModel.heartRateData.collectAsState()
     val motionData by viewModel.motionData.collectAsState()
-    val scope = rememberCoroutineScope()
+    val spO2Data by viewModel.spO2Data.collectAsState()
     
     // Update location every 30 seconds
     LaunchedEffect(Unit) {
@@ -47,6 +48,11 @@ fun MainScreen(
         item {
             Spacer(modifier = Modifier.height(8.dp))
             HeartRateDisplay(heartRateData)
+        }
+        
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+            SpO2Display(spO2Data)
         }
         
         item {
@@ -128,6 +134,35 @@ fun HeartRateDisplay(heartRateData: HeartRateData) {
                 text = "${heartRateData.heartRate.toInt()} BPM",
                 style = MaterialTheme.typography.body2,
                 color = if (heartRateData.isLow) Color.Red else MaterialTheme.colors.onSurface,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun SpO2Display(spO2Data: SpO2Data) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        onClick = { }
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(8.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Blood Oxygen",
+                style = MaterialTheme.typography.title3
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${spO2Data.spO2Level.toInt()}%",
+                style = MaterialTheme.typography.body2,
+                color = if (spO2Data.isLow) Color.Red else MaterialTheme.colors.onSurface,
                 textAlign = TextAlign.Center
             )
         }

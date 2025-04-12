@@ -19,6 +19,7 @@ import com.example.watch_appwearos.data.HeartRateData
 import com.example.watch_appwearos.data.LocationData
 import com.example.watch_appwearos.data.MotionData
 import com.example.watch_appwearos.data.SosStatus
+import com.example.watch_appwearos.data.SpO2Data
 import com.example.watch_appwearos.services.WearableCommunicationService
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -34,6 +35,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application), S
     private val fusedLocationClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(application)
     private val sensorManager = application.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
+    private val spO2Sensor = sensorManager.getDefaultSensor(33) // TYPE_OXYGEN_SATURATION = 33
     private val accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     private val handler = Handler(Looper.getMainLooper())
     private val dataStore = DataStore(application)
@@ -51,9 +53,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application), S
     private val _motionData = MutableStateFlow(MotionData())
     val motionData: StateFlow<MotionData> = _motionData.asStateFlow()
     
+    private val _spO2Data = MutableStateFlow(SpO2Data())
+    val spO2Data: StateFlow<SpO2Data> = _spO2Data.asStateFlow()
+    
     private val LOW_HEART_RATE_THRESHOLD = 40f
     private val HIGH_HEART_RATE_THRESHOLD = 120f
     private val FALL_ACCELERATION_THRESHOLD = 15f
+    private val LOW_SPO2_THRESHOLD = 90f // SpO2 below 90% is concerning
     
     init {
         startSensors()
@@ -64,7 +70,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application), S
             heartRateSensor?.let {
                 sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
             }
-            
+            spO2Sensor?.let {
+                sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+            }
             accelerometerSensor?.let {
                 sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
             }
@@ -90,6 +98,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application), S
                 
                 if ((isLow || isHigh) && !_sosStatus.value.isActive) {
                     triggerSos("Abnormal heart rate detected: ${heartRate.toInt()} BPM")
+                }
+                
+                // Save tracking data
+                saveTrackingData()
+            }
+            33 -> { // TYPE_OXYGEN_SATURATION
+                val spO2 = event.values[0]
+                val isLow = spO2 < LOW_SPO2_THRESHOLD
+                
+                _spO2Data.value = SpO2Data(
+                    spO2Level = spO2,
+                    isLow = isLow
+                )
+                
+                if (isLow && !_sosStatus.value.isActive) {
+                    triggerSos("Low blood oxygen level detected: ${spO2.toInt()}%")
                 }
                 
                 // Save tracking data

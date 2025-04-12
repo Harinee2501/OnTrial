@@ -12,4 +12,10 @@ data class MotionData(
     val accelerationZ: Float = 0f,
     val timestamp: Long = System.currentTimeMillis(),
     val isFallDetected: Boolean = false
+)
+
+data class SpO2Data(
+    val spO2Level: Float = 0f,
+    val timestamp: Long = System.currentTimeMillis(),
+    val isLow: Boolean = false
 ) 
